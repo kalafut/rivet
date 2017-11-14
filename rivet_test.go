@@ -92,6 +92,25 @@ func TestStrings(t *testing.T) {
 	is.False(ok)
 }
 
+func TestInts(t *testing.T) {
+	is := is.New(t)
+
+	db, _ := New("test_db")
+	defer db.Close()
+	defer os.Remove("test_db")
+
+	db.SetInt("I1", 42)
+	is.Equal(db.GetInt("I1"), 42)
+	is.Equal(db.GetInt("I2"), 0)
+
+	i, ok := db.GetIntOK("I1")
+	is.Equal(i, 42)
+	is.True(ok)
+	i, ok = db.GetIntOK("I2")
+	is.Equal(i, 0)
+	is.False(ok)
+}
+
 func TestStruct(t *testing.T) {
 	is := is.New(t)
 
@@ -147,6 +166,7 @@ func TestKeys(t *testing.T) {
 }
 
 func TestExpires(t *testing.T) {
+	t.Skip()
 	is := is.New(t)
 
 	db, _ := New("test_db")

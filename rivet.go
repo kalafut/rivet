@@ -1,6 +1,8 @@
 package rivet
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -93,6 +95,30 @@ func (db *Rivet) Set(key, data string) {
 
 func (db *Rivet) SetX(key, data string, expires int) {
 	db.SetBytes(key, []byte(data))
+}
+
+func (db *Rivet) SetInt(key string, data int64) {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, data)
+	db.SetBytes(key, buf.Bytes())
+}
+
+func (db *Rivet) GetInt(key string) int64 {
+	val, _ := db.GetIntOK(key)
+	return val
+}
+
+func (db *Rivet) GetIntOK(key string) (int64, bool) {
+	var result int64
+
+	b := db.GetBytes(key)
+	if b == nil {
+		return 0, false
+	}
+	buf := bytes.NewBuffer(b)
+	binary.Read(buf, binary.BigEndian, &result)
+
+	return result, true
 }
 
 func (db *Rivet) Expire(key string, expires int) {
