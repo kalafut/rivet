@@ -3,6 +3,7 @@ package rivet
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/tylerb/is"
 )
@@ -143,6 +144,20 @@ func TestKeys(t *testing.T) {
 	db.SetBytes("a", D2)
 
 	is.Equal(db.Keys(), []string{"a", "b", "c"})
+}
+
+func TestExpires(t *testing.T) {
+	is := is.New(t)
+
+	db, _ := New("test_db")
+	defer db.Close()
+	defer os.Remove("test_db")
+
+	db.SetX("foo", "bar", 2)
+	is.Equal(db.Get("foo"), "bar")
+	time.Sleep(2 * time.Second)
+	//_, ok := db.GetOK("foo")
+	//is.False(ok)
 }
 
 //func TestClose(t *testing.T) {

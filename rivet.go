@@ -12,6 +12,7 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 const DefaultBucket = "__default__"
+const expBucket = "__expires__"
 
 var dbs = make(map[string]*bolt.DB)
 
@@ -88,6 +89,15 @@ func (db *Rivet) SetBytes(key string, data []byte) {
 
 func (db *Rivet) Set(key, data string) {
 	db.SetBytes(key, []byte(data))
+}
+
+func (db *Rivet) SetX(key, data string, expires int) {
+	db.SetBytes(key, []byte(data))
+}
+
+func (db *Rivet) Expire(key string, expires int) {
+	//db.Set(key, []byte(data))
+	//binary.Write(a, binary.LittleEndian, myInt)
 }
 
 func (db *Rivet) Get(key string) string {
