@@ -18,12 +18,16 @@ func TestDB(t *testing.T) {
 	db, err := New("test_db")
 	is.NotErr(err)
 
-	db.Set("key1", D1)
-	is.Equal(db.Get("key1"), D1)
-	is.Nil(db.Get("key2"))
+	db.SetBytes("key1", D1)
+	is.Equal(db.GetBytes("key1"), D1)
+	is.Nil(db.GetBytes("key2"))
+
+	db.SetBytes("key1", []byte{})
+	is.Equal(db.GetBytes("key1"), []byte{})
+	is.NotNil(db.GetBytes("key1"))
 
 	db.Del("key1")
-	is.Nil(db.Get("key1"))
+	is.Nil(db.GetBytes("key1"))
 	db.Del("key2")
 }
 
@@ -37,17 +41,17 @@ func TestBucket(t *testing.T) {
 	db2, _ := New("test_db", "b1")
 	db3, _ := New("test_db", "b2")
 
-	db1.Set(key, D1)
-	db2.Set(key, D2)
-	db3.Set(key, D3)
-	is.Equal(db1.Get(key), D1)
-	is.Equal(db2.Get(key), D2)
-	is.Equal(db3.Get(key), D3)
+	db1.SetBytes(key, D1)
+	db2.SetBytes(key, D2)
+	db3.SetBytes(key, D3)
+	is.Equal(db1.GetBytes(key), D1)
+	is.Equal(db2.GetBytes(key), D2)
+	is.Equal(db3.GetBytes(key), D3)
 
 	for _, db := range []*Rivet{db1, db2, db3} {
-		is.NotNil(db.Get(key))
+		is.NotNil(db.GetBytes(key))
 		db.Del(key)
-		is.Nil(db.Get(key))
+		is.Nil(db.GetBytes(key))
 	}
 }
 
@@ -60,10 +64,31 @@ func TestMultiInstance(t *testing.T) {
 	db2, err := New("test_db")
 	is.NotErr(err)
 
-	db1.Set("key1", D1)
-	db2.Set("key2", D2)
-	is.Equal(db1.Get("key2"), D2)
-	is.Equal(db2.Get("key1"), D1)
+	db1.SetBytes("key1", D1)
+	db2.SetBytes("key2", D2)
+	is.Equal(db1.GetBytes("key2"), D2)
+	is.Equal(db2.GetBytes("key1"), D1)
+}
+
+func TestStrings(t *testing.T) {
+	is := is.New(t)
+	var s string
+	var ok bool
+
+	db, _ := New("test_db")
+	defer db.Close()
+	defer os.Remove("test_db")
+
+	db.Set("S1", "my string")
+	is.Equal(db.Get("S1"), "my string")
+	is.Equal(db.Get("S2"), "")
+
+	s, ok = db.GetOK("S1")
+	is.Equal(s, "my string")
+	is.True(ok)
+	s, ok = db.GetOK("S2")
+	is.Equal(s, "")
+	is.False(ok)
 }
 
 func TestStruct(t *testing.T) {
@@ -113,9 +138,9 @@ func TestKeys(t *testing.T) {
 	defer db.Close()
 	defer os.Remove("test_db")
 
-	db.Set("c", D1)
-	db.Set("b", D2)
-	db.Set("a", D2)
+	db.SetBytes("c", D1)
+	db.SetBytes("b", D2)
+	db.SetBytes("a", D2)
 
 	is.Equal(db.Keys(), []string{"a", "b", "c"})
 }
