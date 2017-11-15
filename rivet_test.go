@@ -101,12 +101,14 @@ func TestInts(t *testing.T) {
 
 	db.SetInt("I1", 42)
 	is.Equal(db.GetInt("I1"), 42)
-	is.Equal(db.GetInt("I2"), 0)
+	db.SetInt("I2", -42)
+	is.Equal(db.GetInt("I2"), -42)
+	is.Equal(db.GetInt("I3"), 0)
 
 	i, ok := db.GetIntOK("I1")
 	is.Equal(i, 42)
 	is.True(ok)
-	i, ok = db.GetIntOK("I2")
+	i, ok = db.GetIntOK("I3")
 	is.Equal(i, 0)
 	is.False(ok)
 }
