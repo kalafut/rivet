@@ -2,12 +2,13 @@ package rivet
 
 import (
 	"encoding/binary"
-	"fmt"
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/boltdb/bolt"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/spaolacci/murmur3"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -50,9 +51,11 @@ func newDb(filename, bucket string) (*Rivet, error) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucket))
-		if err != nil {
-			return fmt.Errorf("create bucket: %s", err)
+		for _, bkt := range []string{expBucket, bucket} {
+			_, err := tx.CreateBucketIfNotExists([]byte(bkt))
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -77,8 +80,12 @@ func (db *Rivet) GetJ(key string, out interface{}) {
 }
 
 func (db *Rivet) SetBytes(key string, data []byte) {
+	db.setBytes(db.bucket, key, data)
+}
+
+func (db *Rivet) setBytes(bucket, key string, data []byte) {
 	err := db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(db.bucket))
+		b := tx.Bucket([]byte(bucket))
 		err := b.Put([]byte(key), data)
 		return err
 	})
@@ -118,15 +125,6 @@ func (db *Rivet) GetIntOK(key string) (int64, bool) {
 	return result, true
 }
 
-//func (db *Rivet) Expire(key string, expires int) {
-//	b := make([]byte, 8)
-//
-//	expiration = time.Unix() + expires
-//
-//	binary.BigEndian.PutUint64(b, data)
-//	db.SetBytes(key, b)
-//}
-
 func (db *Rivet) Get(key string) string {
 	b := db.GetBytes(key)
 
@@ -160,10 +158,19 @@ func (db *Rivet) Keys() []string {
 }
 
 func (db *Rivet) GetBytes(key string) []byte {
+	if db.TTL(key) == 0 {
+		db.Del(key)
+		return nil
+	}
+
+	return db.getBytes(db.bucket, key)
+}
+
+func (db *Rivet) getBytes(bucket, key string) []byte {
 	var out []byte
 
 	err := db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(db.bucket))
+		b := tx.Bucket([]byte(bucket))
 		data := b.Get([]byte(key))
 		if data != nil {
 			out = make([]byte, len(data))
@@ -189,4 +196,43 @@ func (db *Rivet) Del(key string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (db *Rivet) Expire(key string, expires int) {
+	combinedKey := hashBucketKey(db.bucket, key)
+	val := make([]byte, 8)
+
+	expiration := time.Now().Unix() + int64(expires)
+	binary.BigEndian.PutUint64(val, uint64(expiration))
+
+	db.setBytes(expBucket, combinedKey, val)
+}
+
+// TODO this isn't right.  TTL should be -2 on keys that don't exist at all, and -1 on key w/o expiration.
+func (db *Rivet) TTL(key string) int {
+	combinedKey := hashBucketKey(db.bucket, key)
+	expiration := db.getBytes(expBucket, combinedKey)
+
+	if expiration == nil {
+		return -1
+	}
+
+	remaining := int64(binary.BigEndian.Uint64(expiration)) - time.Now().Unix()
+
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	return int(remaining)
+}
+
+func hashBucketKey(bucket, key string) string {
+	combined := make([]byte, 16)
+
+	bucketHash := murmur3.Sum64([]byte(bucket))
+	keyHash := murmur3.Sum64([]byte(key))
+	binary.BigEndian.PutUint64(combined, uint64(bucketHash))
+	binary.BigEndian.PutUint64(combined[8:], uint64(keyHash))
+
+	return string(combined)
 }

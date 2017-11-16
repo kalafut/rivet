@@ -14,6 +14,12 @@
   version = "1.0.3"
 
 [[projects]]
+  name = "github.com/spaolacci/murmur3"
+  packages = ["."]
+  revision = "0d12bf811670bf6a1a63828dfbd003eded177fce"
+  version = "v1.0"
+
+[[projects]]
   name = "github.com/tylerb/is"
   packages = ["."]
   revision = "9809c6ce42790d5d476a40c9e791fb2aaf59577b"
@@ -28,6 +34,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "27862ffd516323fc3ddd291778810db65c1e777234f9436505bbf37277333ba0"
+  inputs-digest = "33362ffc525b4df1022724d1ff11055f39cb01aa5b59ae7b81d73515099b8921"
   solver-name = "gps-cdcl"
   solver-version = 1

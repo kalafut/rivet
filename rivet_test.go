@@ -167,19 +167,22 @@ func TestKeys(t *testing.T) {
 	is.Equal(db.Keys(), []string{"a", "b", "c"})
 }
 
-func TestExpires(t *testing.T) {
-	t.Skip()
+func TestExpire(t *testing.T) {
 	is := is.New(t)
 
 	db, _ := New("test_db")
 	defer db.Close()
 	defer os.Remove("test_db")
 
-	db.SetX("foo", "bar", 2)
-	is.Equal(db.Get("foo"), "bar")
+	db.Set("foo", "bar")
+	is.Equal(db.TTL("foo"), -1)
+	db.Expire("foo", 2)
+	is.Equal(db.TTL("foo"), 2)
 	time.Sleep(2 * time.Second)
-	//_, ok := db.GetOK("foo")
-	//is.False(ok)
+	is.Equal(db.TTL("foo"), 0)
+
+	_, ok := db.GetOK("foo")
+	is.False(ok)
 }
 
 //func TestClose(t *testing.T) {
