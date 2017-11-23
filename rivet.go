@@ -80,11 +80,6 @@ func newDb(filename, bucket string) (*Rivet, error) {
 	return &Rivet{r, path, bucket}, nil
 }
 
-func (db Rivet) Close() {
-	db.DB.Close()
-	delete(dbs, db.path)
-}
-
 func (db Rivet) SetData(key string, data interface{}) {
 	b, _ := json.Marshal(data)
 	db.SetBytes(key, b)
@@ -179,6 +174,10 @@ func (db Rivet) Keys() []string {
 	}
 
 	return keys
+}
+
+func (db Rivet) Exists(key string) bool {
+	return db.exists(db.bucket, key)
 }
 
 func (db Rivet) exists(bucket, key string) bool {

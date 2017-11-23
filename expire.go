@@ -27,7 +27,7 @@ Process:
 
 */
 func (db Rivet) Expire(key string, expires time.Duration) {
-	if db.exists(db.bucket, key) {
+	if db.Exists(key) {
 		expiration := time.Now().Add(expires)
 		db.setExpire(db.bucket, key, expiration)
 	}
@@ -36,7 +36,7 @@ func (db Rivet) Expire(key string, expires time.Duration) {
 func (db Rivet) TTL(key string) time.Duration {
 	exp := db.expireKey(db.bucket, key)
 	if exp.IsZero() {
-		if db.exists(db.bucket, key) {
+		if db.Exists(key) {
 			return -1
 		} else {
 			return -2

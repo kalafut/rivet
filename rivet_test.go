@@ -1,7 +1,10 @@
 package rivet
 
 import (
+	"math/rand"
 	"os"
+	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,11 +15,18 @@ var D1 = []byte("data1")
 var D2 = []byte("data2")
 var D3 = []byte("data3")
 
+const testDir = "test_dbs"
+
+func TestMain(m *testing.M) {
+	os.Mkdir(testDir, 0700)
+	result := m.Run()
+	os.RemoveAll(testDir)
+	os.Exit(result)
+}
+
 func TestDB(t *testing.T) {
 	is := is.New(t)
-	defer os.Remove("test_db")
-
-	db, err := New("test_db")
+	db, err := New(randName())
 	is.NotErr(err)
 
 	db.SetBytes("key1", D1)
@@ -36,11 +46,10 @@ func TestBucket(t *testing.T) {
 	const key = "foo"
 
 	is := is.New(t)
-	defer os.Remove("test_db")
 
-	db1, _ := New("test_db")
-	db2, _ := New("test_db", "b1")
-	db3, _ := New("test_db", "b2")
+	db1, _ := New(randName())
+	db2, _ := New(randName(), "b1")
+	db3, _ := New(randName(), "b2")
 
 	db1.SetBytes(key, D1)
 	db2.SetBytes(key, D2)
@@ -58,11 +67,11 @@ func TestBucket(t *testing.T) {
 
 func TestMultiInstance(t *testing.T) {
 	is := is.New(t)
-	defer os.Remove("test_db")
 
-	db1, err := New("test_db")
+	name := randName()
+	db1, err := New(name)
 	is.NotErr(err)
-	db2, err := New("test_db")
+	db2, err := New(name)
 	is.NotErr(err)
 
 	db1.SetBytes("key1", D1)
@@ -76,9 +85,7 @@ func TestStrings(t *testing.T) {
 	var s string
 	var ok bool
 
-	db, _ := New("test_db")
-	defer db.Close()
-	defer os.Remove("test_db")
+	db, _ := New(randName())
 
 	db.Set("S1", "my string")
 	is.Equal(db.Get("S1"), "my string")
@@ -94,10 +101,7 @@ func TestStrings(t *testing.T) {
 
 func TestInts(t *testing.T) {
 	is := is.New(t)
-
-	db, _ := New("test_db")
-	defer db.Close()
-	defer os.Remove("test_db")
+	db, _ := New(randName())
 
 	db.SetInt("I1", 42)
 	is.Equal(db.GetInt("I1"), 42)
@@ -115,10 +119,7 @@ func TestInts(t *testing.T) {
 
 func TestStruct(t *testing.T) {
 	is := is.New(t)
-
-	db, _ := New("test_db")
-	defer db.Close()
-	defer os.Remove("test_db")
+	db, _ := New(randName())
 
 	type ColorGroup struct {
 		ID     int
@@ -155,10 +156,7 @@ func TestStruct(t *testing.T) {
 
 func TestKeys(t *testing.T) {
 	is := is.New(t)
-
-	db, _ := New("test_db")
-	defer db.Close()
-	defer os.Remove("test_db")
+	db, _ := New(randName())
 
 	db.SetBytes("c", D1)
 	db.SetBytes("b", D2)
@@ -171,9 +169,7 @@ func TestExpire(t *testing.T) {
 	t.Skip()
 	is := is.New(t)
 
-	db, _ := New("test_db")
-	defer db.Close()
-	defer os.Remove("test_db")
+	db, _ := New(randName())
 
 	db.Set("foo", "bar")
 	is.Equal(db.TTL("foo"), -1)
@@ -186,19 +182,19 @@ func TestExpire(t *testing.T) {
 	is.False(ok)
 }
 
-//func TestClose(t *testing.T) {
-//	is := is.New(t)
-//	defer os.Remove("test_db")
-//
-//	db1, _ := New("test_db")
-//	db1.Set("foo", D1)
-//	is.Equal(db1.Get("foo"), D1)
-//
-//	db2, _ := New("test_db", "bucket")
-//	db2.Set("foo", D2)
-//	is.Equal(db2.Get("foo"), D2)
-//
-//	db1.Close()
-//	is.Nil(db1.Get("foo"))
-//	is.Nil(db2.Get("foo"))
-//}
+func TestExists(t *testing.T) {
+	is := is.New(t)
+	db, _ := New(randName())
+
+	is.False(db.Exists("foo"))
+	db.Set("foo", "bar")
+	is.True(db.Exists("foo"))
+	db.Del("foo")
+	is.False(db.Exists("foo"))
+}
+
+func randName() string {
+	rand.Seed(time.Now().UnixNano())
+	v := rand.Uint64()
+	return filepath.Join(testDir, strconv.FormatUint(v, 16))
+}

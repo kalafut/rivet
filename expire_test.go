@@ -1,7 +1,6 @@
 package rivet
 
 import (
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -20,10 +19,7 @@ func TestPackeBucketKey(t *testing.T) {
 
 func TestTTL(t *testing.T) {
 	is := is.New(t)
-
-	db, _ := New("test_db")
-	defer db.Close()
-	defer os.Remove("test_db")
+	db, _ := New(randName())
 
 	db.Set("foo", "bar")
 	db.Expire("foo", 2*time.Second)
@@ -46,13 +42,14 @@ func durationsEqual(a, b time.Duration) bool {
 }
 
 func TestExpireCore(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 	is := is.New(t)
 
-	db1, _ := New("test_db")
-	db2, _ := New("test_db", "bucket")
-	defer db1.Close()
-	defer db2.Close()
-	defer os.Remove("test_db")
+	name := randName()
+	db1, _ := New(name)
+	db2, _ := New(name, "bucket")
 
 	db1.Set("foo", "bar")
 	db2.Set("baz", "bar")
