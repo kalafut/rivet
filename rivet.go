@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"log"
 	"path/filepath"
-	"time"
 
 	"github.com/boltdb/bolt"
 	jsoniter "github.com/json-iterator/go"
@@ -72,7 +71,7 @@ func New(filename string) (*Rivet, error) {
 	return &Rivet{r, path, DefaultBucket}, nil
 }
 
-func (db *Rivet) SetBucket(bucket string) {
+func (db *Rivet) Bucket(bucket string) {
 	err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucket))
 		return err
@@ -116,43 +115,23 @@ func (db Rivet) Set(key, val string) {
 	db.SetBytes(key, []byte(val))
 }
 
-func (db Rivet) SetX(key, val string, expires time.Duration) {
-	db.SetBytes(key, []byte(val))
-	db.Expire(key, expires)
-}
-
 func (db Rivet) SetInt(key string, val int64) {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(val))
 	db.SetBytes(key, b)
 }
 
-func (db Rivet) GetInt(key string) int64 {
-	val, _ := db.GetIntOK(key)
-	return val
-}
-
-func (db Rivet) GetIntOK(key string) (int64, bool) {
+func (db Rivet) GetInt(key string) (result int64) {
 	b := db.GetBytes(key)
-	if b == nil {
-		return 0, false
+	if b != nil {
+		result = int64(binary.BigEndian.Uint64(b))
 	}
 
-	result := int64(binary.BigEndian.Uint64(b))
-
-	return result, true
+	return
 }
 
 func (db Rivet) Get(key string) string {
-	b := db.GetBytes(key)
-
-	return string(b)
-}
-
-func (db Rivet) GetOK(key string) (string, bool) {
-	b := db.GetBytes(key)
-
-	return string(b), b != nil
+	return string(db.GetBytes(key))
 }
 
 func (db Rivet) Keys() []string {
@@ -232,7 +211,7 @@ func (db Rivet) getBytes(bucket, key string) []byte {
 	return out
 }
 
-func (db Rivet) Del(key string) {
+func (db Rivet) Delete(key string) {
 	db.del(db.bucket, key)
 }
 

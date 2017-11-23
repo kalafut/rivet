@@ -50,7 +50,7 @@ func TestExpireCore(t *testing.T) {
 	name := randName()
 	db1, _ := New(name)
 	db2, _ := New(name)
-	db2.SetBucket("bucket")
+	db2.Bucket("bucket")
 
 	db1.Set("foo", "bar")
 	db2.Set("baz", "bar")
@@ -69,12 +69,14 @@ func TestExpireCore(t *testing.T) {
 	is.Equal(db1.TTL("foo"), NoExpiration)
 
 	// Big
-	db1.Del("foo")
+	db1.Delete("foo")
 	for i := 0; i < 1000; i++ {
 		s := strconv.Itoa(i)
-		db1.SetX(s, s, -1*time.Second)
+		db1.Set(s, s)
+		db1.Expire(s, -1*time.Second)
 	}
-	db1.SetX("300", "yay", 500*time.Second)
+	db1.Set("300", "yay")
+	db1.Expire("300", 500*time.Second)
 	is.Equal(db1.Keys(), []string{"300"})
 
 }

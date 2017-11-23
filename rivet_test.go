@@ -37,9 +37,9 @@ func TestDB(t *testing.T) {
 	is.Equal(db.GetBytes("key1"), []byte{})
 	is.NotNil(db.GetBytes("key1"))
 
-	db.Del("key1")
+	db.Delete("key1")
 	is.Nil(db.GetBytes("key1"))
-	db.Del("key2")
+	db.Delete("key2")
 }
 
 func TestBucket(t *testing.T) {
@@ -49,9 +49,9 @@ func TestBucket(t *testing.T) {
 
 	db1, _ := New(randName())
 	db2, _ := New(randName())
-	db2.SetBucket("b1")
+	db2.Bucket("b1")
 	db3, _ := New(randName())
-	db3.SetBucket("b2")
+	db3.Bucket("b2")
 
 	db1.SetBytes(key, D1)
 	db2.SetBytes(key, D2)
@@ -62,7 +62,7 @@ func TestBucket(t *testing.T) {
 
 	for _, db := range []*Rivet{db1, db2, db3} {
 		is.NotNil(db.GetBytes(key))
-		db.Del(key)
+		db.Delete(key)
 		is.Nil(db.GetBytes(key))
 	}
 }
@@ -84,21 +84,12 @@ func TestMultiInstance(t *testing.T) {
 
 func TestStrings(t *testing.T) {
 	is := is.New(t)
-	var s string
-	var ok bool
 
 	db, _ := New(randName())
 
 	db.Set("S1", "my string")
 	is.Equal(db.Get("S1"), "my string")
 	is.Equal(db.Get("S2"), "")
-
-	s, ok = db.GetOK("S1")
-	is.Equal(s, "my string")
-	is.True(ok)
-	s, ok = db.GetOK("S2")
-	is.Equal(s, "")
-	is.False(ok)
 }
 
 func TestInts(t *testing.T) {
@@ -110,13 +101,6 @@ func TestInts(t *testing.T) {
 	db.SetInt("I2", -42)
 	is.Equal(db.GetInt("I2"), -42)
 	is.Equal(db.GetInt("I3"), 0)
-
-	i, ok := db.GetIntOK("I1")
-	is.Equal(i, 42)
-	is.True(ok)
-	i, ok = db.GetIntOK("I3")
-	is.Equal(i, 0)
-	is.False(ok)
 }
 
 func TestStruct(t *testing.T) {
@@ -180,8 +164,7 @@ func TestExpire(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	is.Equal(db.TTL("foo"), 0)
 
-	_, ok := db.GetOK("foo")
-	is.False(ok)
+	is.False(db.Exists("foo"))
 }
 
 func TestExists(t *testing.T) {
@@ -191,7 +174,7 @@ func TestExists(t *testing.T) {
 	is.False(db.Exists("foo"))
 	db.Set("foo", "bar")
 	is.True(db.Exists("foo"))
-	db.Del("foo")
+	db.Delete("foo")
 	is.False(db.Exists("foo"))
 }
 
