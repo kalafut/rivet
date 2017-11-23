@@ -12,8 +12,8 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-const DefaultBucket = "__default__"
-const ExpireBucket = "__expirations__"
+const DefaultBucket = "__rivet_default__"
+const ExpireBucket = "__rivet_expirations__"
 
 var dbs = make(map[string]*bolt.DB)
 
@@ -27,15 +27,7 @@ type Rivet struct {
 	bucket string
 }
 
-func New(filename string, bucket ...string) (*Rivet, error) {
-	b := DefaultBucket
-	if len(bucket) > 0 {
-		b = bucket[0]
-	}
-	return newDb(filename, b)
-}
-
-func newDb(filename, bucket string) (*Rivet, error) {
+func New(filename string) (*Rivet, error) {
 	var db *bolt.DB
 	var err error
 
@@ -54,7 +46,7 @@ func newDb(filename, bucket string) (*Rivet, error) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		for _, bkt := range []string{ExpireBucket, bucket} {
+		for _, bkt := range []string{ExpireBucket, DefaultBucket} {
 			_, err := tx.CreateBucketIfNotExists([]byte(bkt))
 			if err != nil {
 				return err
@@ -77,7 +69,20 @@ func newDb(filename, bucket string) (*Rivet, error) {
 	//		}
 	//	}
 	//}()
-	return &Rivet{r, path, bucket}, nil
+	return &Rivet{r, path, DefaultBucket}, nil
+}
+
+func (db *Rivet) SetBucket(bucket string) {
+	err := db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(bucket))
+		return err
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db.bucket = bucket
 }
 
 func (db Rivet) SetData(key string, data interface{}) {

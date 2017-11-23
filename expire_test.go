@@ -49,7 +49,8 @@ func TestExpireCore(t *testing.T) {
 
 	name := randName()
 	db1, _ := New(name)
-	db2, _ := New(name, "bucket")
+	db2, _ := New(name)
+	db2.SetBucket("bucket")
 
 	db1.Set("foo", "bar")
 	db2.Set("baz", "bar")

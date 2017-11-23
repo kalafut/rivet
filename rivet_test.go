@@ -48,8 +48,10 @@ func TestBucket(t *testing.T) {
 	is := is.New(t)
 
 	db1, _ := New(randName())
-	db2, _ := New(randName(), "b1")
-	db3, _ := New(randName(), "b2")
+	db2, _ := New(randName())
+	db2.SetBucket("b1")
+	db3, _ := New(randName())
+	db3.SetBucket("b2")
 
 	db1.SetBytes(key, D1)
 	db2.SetBytes(key, D2)
